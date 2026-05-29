@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Excel 適応ドリル｜情報入門</title>
+<style>
+  :root {
+    --green: #217346;       /* Excelグリーン */
+    --green-light: #e6f2ec;
+    --green-dark: #185c38;
+    --red: #d13438;
+    --red-light: #fde7e7;
+    --gray: #f3f3f3;
+    --text: #222;
+    --muted: #666;
+    --border: #ddd;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Hiragino Kaku Gothic ProN", "メイリオ", sans-serif;
+    background: var(--gray);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 16px;
+  }
+  .wrap { max-width: 680px; margin: 0 auto; }
+
+  header {
+    background: var(--green);
+    color: #fff;
+    padding: 20px 24px;
+    border-radius: 12px 12px 0 0;
+  }
+  header h1 { font-size: 1.3rem; }
+  header p { font-size: 0.85rem; opacity: 0.9; margin-top: 4px; }
+
+  .panel {
+    background: #fff;
+    padding: 24px;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  /* 進捗バー */
+  .progress {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .progress b { color: var(--green-dark); font-size: 1.05rem; }
+
+  .category-tag {
+    display: inline-block;
+    background: var(--green-light);
+    color: var(--green-dark);
+    font-size: 0.75rem;
+    padding: 3px 10px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+    font-weight: bold;
+  }
+  .difficulty {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-left: 8px;
+  }
+
+  .question {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+  .question-sub {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-bottom: 18px;
+    white-space: pre-wrap;
+  }
+  .question-sub code {
+    background: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "SF Mono", Consolas, monospace;
+  }
+
+  .choices { display: flex; flex-direction: column; gap: 10px; }
+  .choice {
+    text-align: left;
+    padding: 14px 16px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.97rem;
+    transition: all 0.15s;
+    font-family: inherit;
+    line-height: 1.5;
+  }
+  .choice:hover:not(:disabled) { border-color: var(--green); background: var(--green-light); }
+  .choice:disabled { cursor: default; }
+  .choice.correct { border-color: var(--green); background: var(--green-light); }
+  .choice.wrong { border-color: var(--red); background: var(--red-light); }
+  .choice .mark { font-weight: bold; margin-right: 6px; }
+
+  .feedback {
+    margin-top: 18px;
+    padding: 16px;
+    border-radius: 10px;
+    font-size: 0.92rem;
+    display: none;
+  }
+  .feedback.show { display: block; }
+  .feedback.ok { background: var(--green-light); border-left: 4px solid var(--green); }
+  .feedback.ng { background: var(--red-light); border-left: 4px solid var(--red); }
+  .feedback .label { font-weight: bold; margin-bottom: 6px; }
+
+  .btn {
+    display: block;
+    width: 100%;
+    margin-top: 18px;
+    padding: 14px;
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn:hover { background: var(--green-dark); }
+  .btn.hidden { display: none; }
+
+  .result { text-align: center; padding: 20px 0; }
+  .result h2 { font-size: 1.4rem; color: var(--green-dark); margin-bottom: 16px; }
+  .result .score { font-size: 2.5rem; font-weight: bold; color: var(--green); }
+  .cat-result { text-align: left; margin: 20px 0; }
+  .cat-bar {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 8px; font-size: 0.85rem;
+  }
+  .cat-bar .name { width: 130px; flex-shrink: 0; }
+  .cat-bar .track { flex: 1; height: 12px; background: #eee; border-radius: 6px; overflow: hidden; }
+  .cat-bar .fill { height: 100%; background: var(--green); }
+  .cat-bar .pct { width: 44px; text-align: right; color: var(--muted); }
+
+  footer { text-align: center; font-size: 0.78rem; color: var(--muted); margin-top: 20px; }
+  footer a { color: var(--green-dark); }
+  .note {
+    background: #fffbe6; border: 1px solid #f0e0a0; border-radius: 8px;
+    padding: 12px 14px; font-size: 0.85rem; margin-bottom: 16px; color: #6b5d00;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>📊 Excel 適応ドリル</h1>
+    <p>情報入門｜あなたの間違いに合わせて、次の問題が変わります</p>
+  </header>
+  <div class="panel" id="panel">
+    <!-- スタート画面 -->
+    <div id="start-screen">
+      <div class="note">
+        このドリルは「操作の暗記」ではなく「<b>いつ・何を・なぜ使うか</b>」を鍛えます。<br>
+        間違えた分野は、あとでもう一度出てきます。気軽に何度でも挑戦してください。
+      </div>
+      <p style="margin-bottom:16px;">全 <b id="total-q">20</b> 問。所要時間の目安は 10〜15分です。</p>
+      <button class="btn" onclick="startQuiz()">スタート</button>
+      <button class="btn" style="background:#888;margin-top:10px;" onclick="resetProgress()">進捗をリセット</button>
+    </div>
+
+    <!-- 問題画面 -->
+    <div id="quiz-screen" style="display:none;">
+      <div class="progress">
+        <span>進捗 <b id="prog-count">0</b> / <span id="prog-total">20</span></span>
+        <span>正解 <b id="prog-correct">0</b></span>
+        <span>難易度 <b id="prog-diff">★</b></span>
+      </div>
+      <span class="category-tag" id="q-category">分野</span><span class="difficulty" id="q-difficulty"></span>
+      <div class="question" id="q-title"></div>
+      <div class="question-sub" id="q-sub"></div>
+      <div class="choices" id="q-choices"></div>
+      <div class="feedback" id="q-feedback"></div>
+      <button class="btn hidden" id="next-btn" onclick="nextQuestion()">次の問題へ →</button>
+    </div>
+
+    <!-- 結果画面 -->
+    <div id="result-screen" style="display:none;">
+      <div class="result">
+        <h2>おつかれさまでした！</h2>
+        <div class="score"><span id="final-score">0</span> / <span id="final-total">20</span></div>
+        <div class="cat-result" id="cat-result"></div>
+        <p id="result-comment" style="margin:16px 0;"></p>
+        <button class="btn" onclick="location.reload()">もう一度挑戦する</button>
+      </div>
+    </div>
+  </div>
+  <footer>
+    情報入門 Excel 適応ドリル ／ 本ドリルは教員（小野原）が生成AI「Claude」と協働で作成しました（2026年）。<br>
+    操作を覚えるためではなく、「考え方」を身につけるための練習です。
+  </footer>
+</div>
+
+<script>
+/* =========================================================
+   問題データ
+   category: function（関数選択）/ reference（参照）/
+             datatype（数値と文字列）/ datajudge（データ判断）/
+             formula（数式の読み書き）
+   diff: 1=易 2=中 3=難
+   ========================================================= */
+const QUESTIONS = [
+  // --- function（関数の選択）---
+  { id:'f1', category:'関数の選択', cat:'function', diff:1,
+    q:'クラス30人のテストの「合計点」を出したい。使う関数は？',
+    sub:'', choices:['SUM','AVERAGE','COUNT','MAX'], answer:0,
+    exp:'合計は SUM。AVERAGE は平均、COUNT は個数、MAX は最大値です。' },
+  { id:'f2', category:'関数の選択', cat:'function', diff:1,
+    q:'30人のテストの「平均点」を出したい。使う関数は？',
+    sub:'', choices:['SUM','AVERAGE','MIN','COUNT'], answer:1,
+    exp:'平均は AVERAGE。「合計÷人数」を自動でやってくれます。' },
+  { id:'f3', category:'関数の選択', cat:'function', diff:2,
+    q:'「出席した人が何人いるか」を数えたい。出席者のセルには「出席」と文字が入っている。使う関数は？',
+    sub:'', choices:['SUM','COUNT','COUNTA','MAX'], answer:2,
+    exp:'COUNTA は「文字でも数値でも、空でないセルの個数」を数えます。COUNT は数値だけなので「出席」という文字は数えられません。' },
+  { id:'f4', category:'関数の選択', cat:'function', diff:3,
+    q:'「点数が60点以上なら合格、そうでなければ不合格」と自動表示したい。使う関数は？',
+    sub:'', choices:['SUM','IF','MAX','AVERAGE'], answer:1,
+    exp:'IF（もし〜なら）は条件によって結果を変える関数。=IF(A1>=60,"合格","不合格") のように使います。' },
+  { id:'f5', category:'関数の選択', cat:'function', diff:2,
+    q:'クラスで「一番低い点数」を知りたい。使う関数は？',
+    sub:'', choices:['MIN','MAX','SUM','COUNT'], answer:0,
+    exp:'最小値は MIN。最大値は MAX です。セットで覚えるより「min=minimum=最小」と意味で覚えましょう。' },
+
+  // --- reference（参照）---
+  { id:'r1', category:'参照', cat:'reference', diff:2,
+    q:'B列の各商品の値段すべてに「税率10%（C1セルに 0.1 と入力）」を掛けたい。B2セルに書く式で、下にコピーしても正しく動くのは？',
+    sub:'', choices:['=B2*C1','=B2*$C$1','=$B$2*C1','=B2*0.1'], answer:1,
+    exp:'$C$1（絶対参照）にすると、下にコピーしてもいつもC1を見ます。$をつけないC1だと、コピーでC2,C3…とズレて空欄を掛けてしまいます。' },
+  { id:'r2', category:'参照', cat:'reference', diff:1,
+    q:'「相対参照」と「絶対参照」の違いの説明として正しいのは？',
+    sub:'', choices:[
+      '絶対参照は計算が速い',
+      '相対参照はコピーすると参照先がズレる、絶対参照（$）はズレない',
+      '絶対参照は数字専用',
+      '違いはない'], answer:1,
+    exp:'コピーしたときに参照先がついてくる（ズレる）のが相対参照、固定されるのが絶対参照（$マーク）です。' },
+  { id:'r3', category:'参照', cat:'reference', diff:3,
+    q:'数式 =A$1 のように「行だけ$」がついている。これは何と呼ばれ、どう動く？',
+    sub:'', choices:[
+      '絶対参照。行も列も固定',
+      '複合参照。行(1)は固定、列(A)はコピーでズレる',
+      'エラーになる',
+      '相対参照と同じ'], answer:1,
+    exp:'$は付けた方だけを固定します。A$1 は「行1は固定、列Aは動く」複合参照。$A1 ならその逆です。' },
+
+  // --- datatype（数値と文字列）---
+  { id:'d1', category:'数値と文字列', cat:'datatype', diff:1,
+    q:'数字を入力したのに SUM で合計されない（0になる）。最も多い原因は？',
+    sub:'', choices:[
+      'Excelの故障',
+      'セルが「文字列」として扱われている',
+      '数字が大きすぎる',
+      'パソコンが古い'], answer:1,
+    exp:'全角入力やデータ取り込みで、数字が「文字列」になることがあります。文字列は計算できません。セルが左寄せ・緑の三角マークが目印。' },
+  { id:'d2', category:'数値と文字列', cat:'datatype', diff:2,
+    q:'「数値」と「文字列」を区別することが大事な、最も本質的な理由は？',
+    sub:'', choices:[
+      '見た目をきれいにするため',
+      '数値は計算に使えるが、文字列は計算できないから',
+      'ファイルが軽くなるから',
+      '印刷がきれいになるから'], answer:1,
+    exp:'同じ「123」でも、数値なら足し算でき、文字列なら「いちにさん」という文字としてしか扱えません。計算できるかどうかが決定的な違いです。' },
+  { id:'d3', category:'数値と文字列', cat:'datatype', diff:2,
+    q:'電話番号「09012345678」をセルに入れたら、先頭の0が消えて「9012345678」になった。なぜ？',
+    sub:'', choices:[
+      'バグ',
+      'Excelが「数値」と判断し、数値では先頭の0は意味がないため消えた',
+      '入力ミス',
+      '文字数制限'], answer:1,
+    exp:'電話番号や郵便番号は「計算しない数字」。文字列として入力する（先頭に \' をつける、または書式を文字列にする）と0が保持されます。' },
+
+  // --- datajudge（データ判断）---
+  { id:'j1', category:'データ判断', cat:'datajudge', diff:2,
+    q:'2クラスのテスト平均がどちらも60点。「実力は同じ」と判断していい？',
+    sub:'', choices:[
+      '平均が同じなので同じと判断してよい',
+      '平均が同じでも、ばらつき（散らばり方）は違うかもしれない',
+      '中央値だけ見れば十分',
+      '判断できない'], answer:1,
+    exp:'平均が同じでも「全員60点」と「0点と100点が半々」では実態が全く違います。平均だけで判断しないのが大事です。' },
+  { id:'j2', category:'データ判断', cat:'datajudge', diff:3,
+    q:'ある集団の年収データで「平均」と「中央値」が大きく違った。どんな状態が考えられる？',
+    sub:'', choices:[
+      'データが少ない',
+      '一部に極端に高い（または低い）外れ値がある',
+      '全員が同じくらいの年収',
+      '計算ミス'], answer:1,
+    exp:'数人の超高所得者がいると、平均はそちらに引っ張られて上がりますが、中央値（真ん中の人）は動きにくい。差が大きい＝外れ値の存在を疑います。' },
+  { id:'j3', category:'データ判断', cat:'datajudge', diff:1,
+    q:'「47都道府県の人口」を比べたい。最も適したグラフは？',
+    sub:'', choices:['円グラフ','棒グラフ','折れ線グラフ','散布図'], answer:1,
+    exp:'項目（都道府県）を比べるなら棒グラフ。円グラフは47項目だと細かすぎ、折れ線は時間変化向け、散布図は2つの量の関係向けです。' },
+  { id:'j4', category:'データ判断', cat:'datajudge', diff:2,
+    q:'「毎月の売上の変化」を見せたい。最も適したグラフは？',
+    sub:'', choices:['円グラフ','棒グラフ','折れ線グラフ','表だけ'], answer:2,
+    exp:'時間に沿った変化・推移は折れ線グラフが最適。「増えている/減っている」が一目でわかります。' },
+  { id:'j5', category:'データ判断', cat:'datajudge', diff:1,
+    q:'データを集計したり統計を取ったりする、最も本質的な目的は？',
+    sub:'', choices:[
+      '表をきれいに整えること',
+      '大量の数字から「読み取れる情報・パターン」を引き出すこと',
+      'グラフを作る練習',
+      '計算の宿題'], answer:1,
+    exp:'集計やグラフは手段であって目的ではありません。目的は「データから意味（パターン・傾向）を読み取る」ことです。' },
+
+  // --- formula（数式の読み書き）---
+  { id:'m1', category:'数式の読み書き', cat:'formula', diff:1,
+    q:'Excelで計算式を書くとき、必ず最初に入力する記号は？',
+    sub:'', choices:['+ （プラス）','= （イコール）','# （シャープ）','! （ビックリ）'], answer:1,
+    exp:'数式は必ず = から始めます。=を付けないと、Excelは「ただの文字」と判断して計算してくれません。' },
+  { id:'m2', category:'数式の読み書き', cat:'formula', diff:2,
+    q:'数式 =SUM(C2:C11) の「C2:C11」は何を意味する？',
+    sub:'', choices:[
+      'C2とC11の2つだけ',
+      'C2からC11までの範囲（10個のセル）',
+      'C2割るC11',
+      'C列全部'], answer:1,
+    exp:'コロン「:」は「〜から〜まで」の範囲を表します。C2:C11 は C2,C3,…,C11 の10個のセルすべてを指します。' },
+  { id:'m3', category:'数式の読み書き', cat:'formula', diff:2,
+    q:'=A1+A2+A3+A4+A5 と =SUM(A1:A5) は同じ結果になる。どちらが良い書き方？',
+    sub:'対象が増えたときのことも考えてください。',
+    choices:[
+      '+でつなぐ方（わかりやすい）',
+      'SUMの方（範囲が増えても修正が楽で、間違いにくい）',
+      'どちらも同じで優劣なし',
+      '+でつなぐ方が速い'], answer:1,
+    exp:'5個ならどちらでもよいですが、100個になると + では現実的でなく、足し忘れも起きます。SUMは範囲指定だけなので楽で正確です。' },
+  { id:'m4', category:'数式の読み書き', cat:'formula', diff:3,
+    q:'1万行のデータから「条件に合う件数」を数えたい。最も良い発想は？',
+    sub:'', choices:[
+      '1行ずつ目で数える',
+      '関数（COUNTIF等）や機能で自動化する。必要ならAIに式を聞く',
+      'データを減らす',
+      'あきらめる'], answer:1,
+    exp:'大量データは自動化が鉄則。COUNTIFのような関数を使う、わからなければ「○○を数える式を教えて」とAIに聞く——これが現代のやり方です。手作業で数えてはいけません。' },
+];
+
+/* =========================================================
+   適応ロジック
+   ========================================================= */
+const TOTAL = 20;
+let state = {
+  asked: [],          // 出題済みID
+  correctCount: 0,
+  askedCount: 0,
+  currentDiff: 1,     // 現在の難易度（1〜3）
+  catStats: {},       // カテゴリ別 {正解,出題}
+  wrongQueue: [],     // 間違えた問題（あとで再出題）
+  current: null,
+  answered: false,
+};
+
+const CAT_LABELS = {
+  function:'関数の選択', reference:'参照', datatype:'数値と文字列',
+  datajudge:'データ判断', formula:'数式の読み書き'
+};
+
+function startQuiz(){
+  document.getElementById('start-screen').style.display='none';
+  document.getElementById('quiz-screen').style.display='block';
+  document.getElementById('prog-total').textContent = TOTAL;
+  // catStats初期化
+  Object.keys(CAT_LABELS).forEach(c=>state.catStats[c]={correct:0,asked:0});
+  pickQuestion();
+}
+
+function resetProgress(){
+  localStorage.removeItem('excelDrillProgress');
+  alert('進捗をリセットしました。');
+}
+
+/* 次に出す問題を選ぶ（適応ロジックの核心） */
+function pickQuestion(){
+  // 1) 弱点キュー（間違えた問題）を優先的に再出題（L3）
+  //    ただし直前ではなく、2問あけてから
+  let candidate = null;
+
+  // 弱点再出題：間違えた問題が溜まっていて、出題から2問以上経過していたら
+  if(state.wrongQueue.length > 0){
+    const w = state.wrongQueue[0];
+    if(state.askedCount - w.askedAt >= 2){
+      candidate = QUESTIONS.find(q=>q.id===w.id);
+      state.wrongQueue.shift();
+    }
+  }
+
+  // 2) 弱点カテゴリ優先 + 難易度マッチ（L1 + L2）
+  if(!candidate){
+    const remaining = QUESTIONS.filter(q=>!state.asked.includes(q.id));
+    if(remaining.length === 0){ endQuiz(); return; }
+
+    // カテゴリごとの正答率を計算。低いカテゴリを優先
+    function catScore(cat){
+      const s = state.catStats[cat];
+      if(!s || s.asked===0) return 0.5; // 未出題は中間
+      return s.correct / s.asked;
+    }
+    // 候補を「弱点カテゴリ かつ 現在難易度に近い」順でソート
+    remaining.sort((a,b)=>{
+      const aw = catScore(a.cat), bw = catScore(b.cat);
+      if(aw !== bw) return aw - bw;                      // 正答率低いカテゴリ優先
+      const ad = Math.abs(a.diff - state.currentDiff);
+      const bd = Math.abs(b.diff - state.currentDiff);
+      return ad - bd;                                    // 難易度が近いもの優先
+    });
+    candidate = remaining[0];
+  }
+
+  state.current = candidate;
+  state.answered = false;
+  renderQuestion(candidate);
+}
+
+function renderQuestion(q){
+  document.getElementById('q-category').textContent = q.category;
+  document.getElementById('q-difficulty').textContent = '難易度 ' + '★'.repeat(q.diff);
+  document.getElementById('q-title').textContent = q.q;
+  document.getElementById('q-sub').textContent = q.sub || '';
+  document.getElementById('prog-count').textContent = state.askedCount;
+  document.getElementById('prog-correct').textContent = state.correctCount;
+  document.getElementById('prog-diff').textContent = '★'.repeat(state.currentDiff);
+
+  const cont = document.getElementById('q-choices');
+  cont.innerHTML = '';
+  q.choices.forEach((c,i)=>{
+    const btn = document.createElement('button');
+    btn.className = 'choice';
+    btn.innerHTML = '<span class="mark">'+String.fromCharCode(65+i)+'.</span>'+c;
+    btn.onclick = ()=>answer(i);
+    cont.appendChild(btn);
+  });
+  const fb = document.getElementById('q-feedback');
+  fb.className = 'feedback';
+  fb.innerHTML = '';
+  document.getElementById('next-btn').classList.add('hidden');
+}
+
+function answer(idx){
+  if(state.answered) return;
+  state.answered = true;
+  const q = state.current;
+  const correct = (idx === q.answer);
+
+  // 統計更新
+  state.askedCount++;
+  state.asked.push(q.id);
+  if(!state.catStats[q.cat]) state.catStats[q.cat]={correct:0,asked:0};
+  state.catStats[q.cat].asked++;
+
+  if(correct){
+    state.correctCount++;
+    state.catStats[q.cat].correct++;
+    // 難易度アップ（L2）：上限3
+    if(state.currentDiff < 3) state.currentDiff++;
+  } else {
+    // 難易度ダウン（L2）：下限1
+    if(state.currentDiff > 1) state.currentDiff--;
+    // 弱点キューに追加（L3）：あとで再出題
+    state.wrongQueue.push({id:q.id, askedAt:state.askedCount});
+  }
+
+  // ボタンの色付け
+  const btns = document.querySelectorAll('.choice');
+  btns.forEach((b,i)=>{
+    b.disabled = true;
+    if(i === q.answer) b.classList.add('correct');
+    if(i === idx && !correct) b.classList.add('wrong');
+  });
+
+  // フィードバック
+  const fb = document.getElementById('q-feedback');
+  fb.className = 'feedback show ' + (correct ? 'ok' : 'ng');
+  fb.innerHTML = '<div class="label">'+(correct?'⭕ 正解！':'❌ おしい！')+'</div>'+q.exp;
+
+  // 次へボタン
+  const nb = document.getElementById('next-btn');
+  if(state.askedCount >= TOTAL){
+    nb.textContent = '結果を見る →';
+  }
+  nb.classList.remove('hidden');
+
+  saveProgress();
+}
+
+function nextQuestion(){
+  if(state.askedCount >= TOTAL){ endQuiz(); return; }
+  pickQuestion();
+}
+
+function endQuiz(){
+  document.getElementById('quiz-screen').style.display='none';
+  document.getElementById('result-screen').style.display='block';
+  document.getElementById('final-score').textContent = state.correctCount;
+  document.getElementById('final-total').textContent = state.askedCount;
+
+  // カテゴリ別結果
+  const cr = document.getElementById('cat-result');
+  cr.innerHTML = '<h3 style="font-size:0.95rem;margin-bottom:10px;">分野ごとの正答率</h3>';
+  Object.keys(CAT_LABELS).forEach(cat=>{
+    const s = state.catStats[cat];
+    if(!s || s.asked===0) return;
+    const pct = Math.round(s.correct/s.asked*100);
+    cr.innerHTML += `
+      <div class="cat-bar">
+        <span class="name">${CAT_LABELS[cat]}</span>
+        <span class="track"><span class="fill" style="width:${pct}%"></span></span>
+        <span class="pct">${pct}%</span>
+      </div>`;
+  });
+
+  // コメント
+  const rate = state.correctCount/state.askedCount;
+  let comment;
+  if(rate >= 0.9) comment = '素晴らしい！考え方がしっかり身についています。';
+  else if(rate >= 0.7) comment = 'よくできました。間違えた分野をもう一度見直すとさらに伸びます。';
+  else if(rate >= 0.5) comment = '基礎はOK。苦手分野を中心に、もう一度挑戦してみましょう。';
+  else comment = '今日が出発点。操作の暗記より「いつ何を使うか」を意識して、何度でも挑戦を！';
+  document.getElementById('result-comment').textContent = comment;
+
+  localStorage.removeItem('excelDrillProgress');
+}
+
+function saveProgress(){
+  try {
+    localStorage.setItem('excelDrillProgress', JSON.stringify({
+      askedCount: state.askedCount,
+      correctCount: state.correctCount,
+      ts: Date.now()
+    }));
+  } catch(e){}
+}
+</script>
+</body>
+</html>
