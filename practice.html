@@ -87,6 +87,24 @@
   .func-desc{font-size:.86rem;color:var(--text);margin:3px 0;}
   .func-ex{font-family:"SF Mono",Consolas,monospace;font-size:.82rem;background:#f0f0f0;
     padding:3px 8px;border-radius:4px;display:inline-block;margin-top:3px;color:#444;}
+
+  /* AIに聞いてみよう */
+  .ask-ai{margin:14px 0;padding:14px 16px;background:#eef4ff;border:1px solid #cdddf7;border-radius:10px;}
+  .ask-ai .title{font-weight:bold;font-size:.9rem;color:#1a4480;margin-bottom:8px;}
+  .ask-ai .prompt-box{display:flex;gap:8px;align-items:stretch;margin-bottom:8px;}
+  .ask-ai .prompt-text{flex:1;background:#fff;border:1px solid #cdddf7;border-radius:6px;
+    padding:8px 10px;font-size:.85rem;line-height:1.5;color:#333;}
+  .ask-ai .copy-btn{background:#1a4480;color:#fff;border:none;border-radius:6px;
+    padding:0 14px;font-size:.8rem;cursor:pointer;white-space:nowrap;font-family:inherit;}
+  .ask-ai .copy-btn:hover{background:#123163;}
+  .ask-ai .copy-btn.copied{background:var(--green);}
+  .ask-ai .ai-links{font-size:.82rem;color:#444;}
+  .ask-ai .ai-links a{display:inline-block;margin:2px 6px 2px 0;padding:3px 10px;
+    background:#fff;border:1px solid #cdddf7;border-radius:999px;color:#1a4480;text-decoration:none;}
+  .ask-ai .ai-links a:hover{background:#1a4480;color:#fff;}
+  .ask-ai .tips{font-size:.78rem;color:#666;margin-top:8px;line-height:1.6;}
+  .ask-ai .tips .ng{color:var(--red);}
+  .ask-ai .tips .ok{color:var(--green-dark);}
 </style>
 </head>
 <body>
@@ -127,6 +145,9 @@
         <span class="fx">fx</span>
         <input type="text" id="formula-input" placeholder="ここに数式を入力（例：=SUM(C2:C6)）" autocomplete="off" spellcheck="false">
       </div>
+
+      <!-- AIに聞いてみよう -->
+      <div class="ask-ai" id="ask-ai"></div>
       <div class="btn-row">
         <button class="btn" id="check-btn" onclick="checkAnswer()">答え合わせ</button>
         <button class="btn ghost" id="show-btn" onclick="showAnswer()">ヒントを見る</button>
@@ -224,42 +245,49 @@ const TASKS = [
     instruction:'10人の点数の「合計」を求めなさい。',
     hint:'C2〜C11 の合計です。<code>=SUM(範囲)</code> を使います。',
     targetCell:'C13', expected:778,
+    prompt:'ExcelでC2からC11までの数値の合計を出す数式を教えてください。関数を使った形でお願いします。',
     exp:'=SUM(C2:C11) で778。SUMは範囲を指定するだけ。一つずつ足すより速くて正確です。' },
 
   { tag:'平均', mustUse:'AVERAGE',
     instruction:'10人の点数の「平均」を求めなさい。',
     hint:'<code>=AVERAGE(範囲)</code> を使います。',
     targetCell:'C13', expected:77.8,
+    prompt:'ExcelでC2からC11までの数値の平均を出す数式を教えてください。',
     exp:'=AVERAGE(C2:C11) で77.8。「合計÷人数」を自動でやってくれます。' },
 
   { tag:'最大値', mustUse:'MAX',
     instruction:'10人の中で「一番高い点数」を求めなさい。',
     hint:'<code>=MAX(範囲)</code> を使います。',
     targetCell:'C13', expected:95,
+    prompt:'ExcelでC2からC11までの中で一番大きい数値を求める数式を教えてください。',
     exp:'=MAX(C2:C11) で95。最高点を一発で見つけられます。' },
 
   { tag:'最小値', mustUse:'MIN',
     instruction:'10人の中で「一番低い点数」を求めなさい。',
     hint:'<code>=MIN(範囲)</code> を使います。',
     targetCell:'C13', expected:55,
+    prompt:'ExcelでC2からC11までの中で一番小さい数値を求める数式を教えてください。',
     exp:'=MIN(C2:C11) で55。MAXとセットで覚えましょう。' },
 
   { tag:'件数', mustUse:'COUNT',
     instruction:'点数が入力されている「人数（個数）」を数えなさい。',
     hint:'<code>=COUNT(範囲)</code> は数値の個数を数えます。',
     targetCell:'C13', expected:10,
+    prompt:'ExcelでC2からC11までのうち、数値が入っているセルの個数を数える数式を教えてください。',
     exp:'=COUNT(C2:C11) で10。COUNTは「数値が入ったセルの数」を数えます。' },
 
   { tag:'合格者数', mustUse:'COUNTIF',
     instruction:'80点以上の「合格者の人数」を数えなさい。',
     hint:'条件付きで数えるには <code>=COUNTIF(範囲, 条件)</code>。条件は <code>">=80"</code> のように書きます。',
     targetCell:'C13', expected:5,
+    prompt:'ExcelでC2からC11までのうち、80以上の数値がいくつあるかを数える数式を教えてください。',
     exp:'=COUNTIF(C2:C11,">=80") で5人（85,90,88,95,82）。COUNTIFは「条件に合うものだけ数える」関数です。' },
 
   { tag:'四則演算', mustUse:null,
     instruction:'学生Aの点数（78）と学生Bの点数（85）を「足し算」しなさい。',
     hint:'セル参照で計算できます。<code>=C2+C3</code> のように。',
     targetCell:'C13', expected:163,
+    prompt:'ExcelでC2のセルとC3のセルの数値を足し算する数式を教えてください。',
     exp:'=C2+C3 で163。数式の中でセル番地を使うと、中身の数値で計算されます。' },
 
   { tag:'絶対参照', mustUse:null, useAbsolute:true,
@@ -267,7 +295,16 @@ const TASKS = [
     hint:'コピーしてもE1を見続けるよう、<code>$</code> で固定します。例：<code>=C2/$E$1</code>',
     targetCell:'C13', expected:0.78,
     extraCol:true,
+    prompt:'ExcelでC2の値をE1の値で割りたいです。下のセルにコピーしてもE1だけは固定されるようにする方法を教えてください。',
     exp:'=C2/$E$1 で0.78。$E$1（絶対参照）にすると、下にコピーしてもいつもE1（満点100）を見ます。$をつけないとコピーでズレてしまいます。' },
+];
+
+/* AIサービス（Copilot先頭：A3ライセンスで利用可） */
+const AI_SERVICES = [
+  { name:'Copilot', url:'https://copilot.microsoft.com/' },
+  { name:'ChatGPT', url:'https://chatgpt.com/' },
+  { name:'Gemini', url:'https://gemini.google.com/' },
+  { name:'Claude', url:'https://claude.ai/' },
 ];
 
 /* =========================================================
@@ -344,6 +381,42 @@ function renderTask(){
   const fb = document.getElementById('t-feedback');
   fb.className = 'feedback'; fb.innerHTML = '';
   document.getElementById('next-btn').classList.add('hidden');
+
+  // 「AIに聞いてみよう」パネル
+  renderAskAI(task);
+}
+
+function renderAskAI(task){
+  const box = document.getElementById('ask-ai');
+  const links = AI_SERVICES.map(s =>
+    '<a href="'+s.url+'" target="_blank" rel="noopener">'+s.name+'</a>'
+  ).join('');
+  box.innerHTML =
+    '<div class="title">🤖 わからなければ AI に聞いてみよう</div>' +
+    '<div class="prompt-box">' +
+      '<div class="prompt-text" id="ai-prompt">'+task.prompt+'</div>' +
+      '<button class="copy-btn" id="ai-copy">コピー</button>' +
+    '</div>' +
+    '<div class="ai-links">使えるAIに貼り付けてみよう：'+links+'</div>' +
+    '<div class="tips">' +
+      'コツ：何をしたいかを具体的に。<br>' +
+      '<span class="ng">✗ 悪い例：「Excel 合計」</span>（短すぎて伝わらない）<br>' +
+      '<span class="ok">○ 良い例：上のように「どのセルを・どうしたいか」まで書く</span>' +
+    '</div>';
+  // コピーボタン
+  document.getElementById('ai-copy').onclick = function(){
+    const text = task.prompt;
+    navigator.clipboard.writeText(text).then(()=>{
+      this.textContent = 'コピーした！';
+      this.classList.add('copied');
+      setTimeout(()=>{ this.textContent='コピー'; this.classList.remove('copied'); }, 1500);
+    }).catch(()=>{
+      // クリップボードAPI不可の場合はテキスト選択
+      const r = document.createRange();
+      r.selectNodeContents(document.getElementById('ai-prompt'));
+      const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    });
+  };
 }
 
 function evaluateFormula(task, formula){
