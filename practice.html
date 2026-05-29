@@ -299,9 +299,9 @@ const TASKS = [
     exp:'=C2/$E$1 で0.78。$E$1（絶対参照）にすると、下にコピーしてもいつもE1（満点100）を見ます。$をつけないとコピーでズレてしまいます。' },
 ];
 
-/* AIサービス（Copilot先頭：A3ライセンスで利用可） */
+/* AIサービス（Copilot先頭：本学のA3ライセンスで利用可。大学アカウントでサインイン） */
 const AI_SERVICES = [
-  { name:'Copilot', url:'https://copilot.microsoft.com/' },
+  { name:'Copilot（大学）', url:'https://m365.cloud.microsoft/chat', note:true },
   { name:'ChatGPT', url:'https://chatgpt.com/' },
   { name:'Gemini', url:'https://gemini.google.com/' },
   { name:'Claude', url:'https://claude.ai/' },
@@ -399,6 +399,7 @@ function renderAskAI(task){
     '</div>' +
     '<div class="ai-links">使えるAIに貼り付けてみよう：'+links+'</div>' +
     '<div class="tips">' +
+      '💡 <b>Copilot（大学）</b>は、北星のアカウントでサインインすると使えます（入力した内容が学外に出ない契約です）。<br>' +
       'コツ：何をしたいかを具体的に。<br>' +
       '<span class="ng">✗ 悪い例：「Excel 合計」</span>（短すぎて伝わらない）<br>' +
       '<span class="ok">○ 良い例：上のように「どのセルを・どうしたいか」まで書く</span>' +
