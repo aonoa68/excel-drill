@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Excel 数式 実技ドリル｜情報入門</title>
+<!-- HyperFormula：Excel互換の数式エンジン（ブラウザ内で動作） -->
+<script src="https://cdn.jsdelivr.net/npm/hyperformula@3.3.0/dist/hyperformula.full.min.js"></script>
+<style>
+  :root{
+    --green:#217346; --green-light:#e6f2ec; --green-dark:#185c38;
+    --red:#d13438; --red-light:#fde7e7; --gray:#f3f3f3;
+    --text:#222; --muted:#666; --border:#ddd; --head:#f7f7f7;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,"Hiragino Kaku Gothic ProN","メイリオ",sans-serif;
+    background:var(--gray);color:var(--text);line-height:1.6;padding:16px;}
+  .wrap{max-width:720px;margin:0 auto;}
+  header{background:var(--green);color:#fff;padding:20px 24px;border-radius:12px 12px 0 0;}
+  header h1{font-size:1.3rem;}
+  header p{font-size:.85rem;opacity:.9;margin-top:4px;}
+  .panel{background:#fff;padding:24px;border-radius:0 0 12px 12px;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+
+  .progress{display:flex;gap:16px;flex-wrap:wrap;font-size:.85rem;color:var(--muted);
+    margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+  .progress b{color:var(--green-dark);font-size:1.05rem;}
+
+  .task-tag{display:inline-block;background:var(--green-light);color:var(--green-dark);
+    font-size:.75rem;padding:3px 10px;border-radius:999px;margin-bottom:12px;font-weight:bold;}
+  .instruction{font-size:1.05rem;font-weight:bold;margin-bottom:6px;}
+  .hint{font-size:.85rem;color:var(--muted);margin-bottom:16px;}
+  .hint code{background:#f0f0f0;padding:1px 5px;border-radius:4px;font-family:monospace;}
+
+  /* スプレッドシート風グリッド */
+  .sheet{border-collapse:collapse;width:100%;margin-bottom:8px;font-size:.9rem;overflow-x:auto;display:block;}
+  .sheet table{border-collapse:collapse;width:100%;}
+  .sheet th,.sheet td{border:1px solid #c8c8c8;padding:6px 8px;text-align:center;min-width:44px;height:32px;}
+  .sheet th{background:var(--head);color:var(--muted);font-weight:normal;font-size:.8rem;}
+  .sheet .rowhead{background:var(--head);color:var(--muted);font-size:.8rem;width:32px;}
+  .sheet td.target{background:#fff7d6;}
+  .sheet td.filled{background:var(--green-light);font-weight:bold;}
+
+  .formula-bar{display:flex;align-items:center;gap:8px;margin:16px 0 8px;}
+  .formula-bar .fx{font-style:italic;color:var(--muted);font-weight:bold;font-size:1.1rem;width:28px;text-align:center;}
+  .formula-bar input{flex:1;padding:12px 14px;border:2px solid var(--green);border-radius:8px;
+    font-size:1rem;font-family:"SF Mono",Consolas,monospace;}
+  .formula-bar input:focus{outline:none;border-color:var(--green-dark);box-shadow:0 0 0 3px var(--green-light);}
+
+  .btn{padding:12px 20px;background:var(--green);color:#fff;border:none;border-radius:8px;
+    font-size:.95rem;font-weight:bold;cursor:pointer;font-family:inherit;}
+  .btn:hover{background:var(--green-dark);}
+  .btn.full{display:block;width:100%;margin-top:14px;}
+  .btn.ghost{background:#888;}
+  .btn.hidden{display:none;}
+  .btn-row{display:flex;gap:10px;}
+
+  .feedback{margin-top:16px;padding:16px;border-radius:10px;font-size:.92rem;display:none;}
+  .feedback.show{display:block;}
+  .feedback.ok{background:var(--green-light);border-left:4px solid var(--green);}
+  .feedback.ng{background:var(--red-light);border-left:4px solid var(--red);}
+  .feedback .label{font-weight:bold;margin-bottom:6px;}
+  .feedback code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px;font-family:monospace;}
+
+  .result{text-align:center;padding:20px 0;}
+  .result h2{font-size:1.4rem;color:var(--green-dark);margin-bottom:16px;}
+  .result .score{font-size:2.5rem;font-weight:bold;color:var(--green);}
+
+  footer{text-align:center;font-size:.78rem;color:var(--muted);margin-top:20px;}
+  footer a{color:var(--green-dark);}
+  .note{background:#fffbe6;border:1px solid #f0e0a0;border-radius:8px;padding:12px 14px;
+    font-size:.85rem;margin-bottom:16px;color:#6b5d00;}
+  .nav-links{text-align:center;margin-top:10px;font-size:.85rem;}
+  .nav-links a{color:var(--green-dark);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>⌨️ Excel 数式 実技ドリル</h1>
+    <p>情報入門｜実際に <code>=SUM(...)</code> を入力して練習しよう</p>
+  </header>
+  <div class="panel" id="panel">
+
+    <!-- スタート -->
+    <div id="start-screen">
+      <div class="note">
+        本物のExcelのように、セルに数式を入力して答えます。<br>
+        判定は「<b>指定された関数を使い、かつ計算結果が正しいか</b>」。
+        手で答えの数字を打っても正解になりません（数式を使いましょう）。
+      </div>
+      <p style="margin-bottom:16px;">全 <b id="total-task">8</b> 問。実際に手を動かす練習です。</p>
+      <button class="btn full" onclick="startDrill()">スタート</button>
+      <div class="nav-links" style="margin-top:14px;">
+        <a href="index.html">→ 概念ドリル（選択式）はこちら</a>
+      </div>
+    </div>
+
+    <!-- 問題 -->
+    <div id="drill-screen" style="display:none;">
+      <div class="progress">
+        <span>進捗 <b id="prog-count">0</b> / <span id="prog-total">8</span></span>
+        <span>正解 <b id="prog-correct">0</b></span>
+      </div>
+      <span class="task-tag" id="t-tag">課題</span>
+      <div class="instruction" id="t-instruction"></div>
+      <div class="hint" id="t-hint"></div>
+
+      <div class="sheet" id="t-sheet"></div>
+
+      <div class="formula-bar">
+        <span class="fx">fx</span>
+        <input type="text" id="formula-input" placeholder="ここに数式を入力（例：=SUM(C2:C6)）" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="btn-row">
+        <button class="btn" id="check-btn" onclick="checkAnswer()">答え合わせ</button>
+        <button class="btn ghost" id="show-btn" onclick="showAnswer()">ヒントを見る</button>
+      </div>
+
+      <div class="feedback" id="t-feedback"></div>
+      <button class="btn full hidden" id="next-btn" onclick="nextTask()">次の問題へ →</button>
+    </div>
+
+    <!-- 結果 -->
+    <div id="result-screen" style="display:none;">
+      <div class="result">
+        <h2>おつかれさまでした！</h2>
+        <div class="score"><span id="final-score">0</span> / <span id="final-total">8</span></div>
+        <p id="result-comment" style="margin:16px 0;"></p>
+        <button class="btn full" onclick="location.reload()">もう一度挑戦する</button>
+        <div class="nav-links" style="margin-top:14px;">
+          <a href="index.html">→ 概念ドリル（選択式）も解いてみる</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <footer>
+    情報入門 Excel 実技ドリル ／ 数式エンジン：HyperFormula（Excel互換）<br>
+    本ドリルは教員（小野原）が生成AI「Claude」と協働で作成しました（2026年）。
+  </footer>
+</div>
+
+<script>
+/* =========================================================
+   共通データ（10人の点数）
+   ========================================================= */
+const DATA = [
+  ['番号','氏名','点数'],
+  [1,'学生A',78],
+  [2,'学生B',85],
+  [3,'学生C',62],
+  [4,'学生D',90],
+  [5,'学生E',73],
+  [6,'学生F',55],
+  [7,'学生G',88],
+  [8,'学生H',95],
+  [9,'学生I',70],
+  [10,'学生J',82],
+];
+
+/* =========================================================
+   課題定義
+   - grid: 表示するデータ（2次元配列）
+   - targetCell: 入力すべきセル（例 'C12'）
+   - mustUse: 使うべき関数名（大文字, null可）
+   - expected: 期待される計算結果
+   - instruction / hint / exp
+   ========================================================= */
+const TASKS = [
+  { tag:'合計', mustUse:'SUM',
+    instruction:'10人の点数の「合計」を求めなさい。',
+    hint:'C2〜C11 の合計です。<code>=SUM(範囲)</code> を使います。',
+    targetCell:'C13', expected:778,
+    exp:'=SUM(C2:C11) で778。SUMは範囲を指定するだけ。一つずつ足すより速くて正確です。' },
+
+  { tag:'平均', mustUse:'AVERAGE',
+    instruction:'10人の点数の「平均」を求めなさい。',
+    hint:'<code>=AVERAGE(範囲)</code> を使います。',
+    targetCell:'C13', expected:77.8,
+    exp:'=AVERAGE(C2:C11) で77.8。「合計÷人数」を自動でやってくれます。' },
+
+  { tag:'最大値', mustUse:'MAX',
+    instruction:'10人の中で「一番高い点数」を求めなさい。',
+    hint:'<code>=MAX(範囲)</code> を使います。',
+    targetCell:'C13', expected:95,
+    exp:'=MAX(C2:C11) で95。最高点を一発で見つけられます。' },
+
+  { tag:'最小値', mustUse:'MIN',
+    instruction:'10人の中で「一番低い点数」を求めなさい。',
+    hint:'<code>=MIN(範囲)</code> を使います。',
+    targetCell:'C13', expected:55,
+    exp:'=MIN(C2:C11) で55。MAXとセットで覚えましょう。' },
+
+  { tag:'件数', mustUse:'COUNT',
+    instruction:'点数が入力されている「人数（個数）」を数えなさい。',
+    hint:'<code>=COUNT(範囲)</code> は数値の個数を数えます。',
+    targetCell:'C13', expected:10,
+    exp:'=COUNT(C2:C11) で10。COUNTは「数値が入ったセルの数」を数えます。' },
+
+  { tag:'合格者数', mustUse:'COUNTIF',
+    instruction:'80点以上の「合格者の人数」を数えなさい。',
+    hint:'条件付きで数えるには <code>=COUNTIF(範囲, 条件)</code>。条件は <code>">=80"</code> のように書きます。',
+    targetCell:'C13', expected:5,
+    exp:'=COUNTIF(C2:C11,">=80") で5人（85,90,88,95,82）。COUNTIFは「条件に合うものだけ数える」関数です。' },
+
+  { tag:'四則演算', mustUse:null,
+    instruction:'学生Aの点数（78）と学生Bの点数（85）を「足し算」しなさい。',
+    hint:'セル参照で計算できます。<code>=C2+C3</code> のように。',
+    targetCell:'C13', expected:163,
+    exp:'=C2+C3 で163。数式の中でセル番地を使うと、中身の数値で計算されます。' },
+
+  { tag:'絶対参照', mustUse:null, useAbsolute:true,
+    instruction:'学生Aの点数（C2）を、満点（E1セルの 100）で割って「得点率」を求めなさい。式は下方向にコピーしても使えるように、満点のセルは固定すること。',
+    hint:'コピーしてもE1を見続けるよう、<code>$</code> で固定します。例：<code>=C2/$E$1</code>',
+    targetCell:'C13', expected:0.78,
+    extraCol:true,
+    exp:'=C2/$E$1 で0.78。$E$1（絶対参照）にすると、下にコピーしてもいつもE1（満点100）を見ます。$をつけないとコピーでズレてしまいます。' },
+];
+
+/* =========================================================
+   HyperFormula セットアップ
+   ========================================================= */
+let hf = null;
+let state = { idx:0, correct:0, answered:false };
+
+function buildSheetData(task){
+  // DATA を 2次元配列に展開（A,B,C列）。さらに課題用のセルを足す
+  const grid = DATA.map(row => row.slice());
+  // 行を13行目まで用意（合計などの入力行）
+  while(grid.length < 13) grid.push(['','','']);
+  grid[12] = ['結果→','', '']; // 13行目（index12）：C13が入力ターゲット
+  // 絶対参照課題用：E1に満点100を置く
+  if(task.extraCol){
+    // E列(index4)まで広げる
+    grid.forEach(r=>{ while(r.length<5) r.push(''); });
+    grid[0][4] = 100;   // E1 = 満点
+    grid[0][3] = '満点';// D1 ラベル代わり（E1の左）→ 実際はD1
+  }
+  return grid;
+}
+
+function startDrill(){
+  document.getElementById('start-screen').style.display='none';
+  document.getElementById('drill-screen').style.display='block';
+  document.getElementById('prog-total').textContent = TASKS.length;
+  document.getElementById('total-task').textContent = TASKS.length;
+  renderTask();
+}
+
+function colLetter(n){ return String.fromCharCode(65+n); }
+
+function renderTask(){
+  const task = TASKS[state.idx];
+  state.answered = false;
+
+  document.getElementById('t-tag').textContent = task.tag;
+  document.getElementById('t-instruction').textContent = task.instruction;
+  document.getElementById('t-hint').innerHTML = task.hint;
+  document.getElementById('prog-count').textContent = state.idx;
+  document.getElementById('prog-correct').textContent = state.correct;
+
+  // シート描画
+  const grid = buildSheetData(task);
+  const nCols = Math.max(...grid.map(r=>r.length));
+  let html = '<table><thead><tr><th class="rowhead"></th>';
+  for(let c=0;c<nCols;c++) html += '<th>'+colLetter(c)+'</th>';
+  html += '</tr></thead><tbody>';
+  for(let r=0;r<grid.length;r++){
+    html += '<tr><td class="rowhead">'+(r+1)+'</td>';
+    for(let c=0;c<nCols;c++){
+      const addr = colLetter(c)+(r+1);
+      let cls = '';
+      if(addr === task.targetCell) cls = 'target';
+      let val = grid[r][c]!==undefined && grid[r][c]!=='' ? grid[r][c] : '';
+      if(addr === task.targetCell) val = '?';
+      html += '<td class="'+cls+'">'+val+'</td>';
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  document.getElementById('t-sheet').innerHTML = html;
+
+  // 入力欄リセット
+  const inp = document.getElementById('formula-input');
+  inp.value = '';
+  inp.disabled = false;
+  inp.focus();
+
+  document.getElementById('check-btn').disabled = false;
+  const fb = document.getElementById('t-feedback');
+  fb.className = 'feedback'; fb.innerHTML = '';
+  document.getElementById('next-btn').classList.add('hidden');
+}
+
+function evaluateFormula(task, formula){
+  // HyperFormula で数式を評価
+  const grid = buildSheetData(task);
+  // targetCell の位置を求める
+  const col = task.targetCell.charCodeAt(0) - 65;
+  const row = parseInt(task.targetCell.slice(1)) - 1;
+  // grid を十分大きく
+  const nCols = Math.max(...grid.map(r=>r.length), col+1);
+  const fullGrid = grid.map(r=>{ const rr=r.slice(); while(rr.length<nCols) rr.push(''); return rr; });
+  // ターゲットセルに数式を入れる
+  fullGrid[row][col] = formula;
+
+  try {
+    const tmp = HyperFormula.buildFromArray(fullGrid, { licenseKey:'gpl-v3' });
+    const sheetId = tmp.getSheetId(tmp.getSheetNames()[0]);
+    const val = tmp.getCellValue({ sheet:sheetId, row:row, col:col });
+    tmp.destroy();
+    return val;
+  } catch(e){
+    return { error:true, message:String(e) };
+  }
+}
+
+function checkAnswer(){
+  if(state.answered) return;
+  const task = TASKS[state.idx];
+  let formula = document.getElementById('formula-input').value.trim();
+
+  if(!formula){ alert('数式を入力してください'); return; }
+  // 全角→半角の軽い補正（よくあるミス救済）
+  formula = formula.replace(/＝/g,'=').replace(/（/g,'(').replace(/）/g,')')
+                   .replace(/：/g,':').replace(/，/g,',').replace(/＄/g,'$');
+
+  const upper = formula.toUpperCase();
+  let ok = true;
+  let reasons = [];
+
+  // 1) =で始まるか
+  if(!formula.startsWith('=')){
+    ok = false; reasons.push('数式は <code>=</code> から始めます。');
+  }
+  // 2) 指定関数を使っているか
+  if(task.mustUse && !upper.includes(task.mustUse)){
+    ok = false; reasons.push('この問題では <code>'+task.mustUse+'</code> 関数を使ってください。');
+  }
+  // 3) 絶対参照が必要な問題で $ があるか
+  if(task.useAbsolute && !formula.includes('$')){
+    ok = false; reasons.push('コピーしても固定されるよう、<code>$</code>（絶対参照）を使ってください。');
+  }
+  // 4) 手打ちの数値だけ（関数指定がない問題で、=なしの数字ベタ書き）を弾く
+  if(task.mustUse===null && /^=?\s*[\d.]+\s*$/.test(formula)){
+    ok = false; reasons.push('答えの数字を直接入力するのではなく、<b>セル参照や式</b>で計算してください。');
+  }
+
+  // 5) 計算結果が正しいか（HyperFormulaで評価）
+  let calcVal = null;
+  if(ok){
+    calcVal = evaluateFormula(task, formula);
+    if(calcVal && calcVal.error){
+      ok = false; reasons.push('数式にエラーがあります。括弧やセル範囲を確認してください。');
+    } else {
+      const num = typeof calcVal === 'number' ? calcVal : NaN;
+      if(isNaN(num) || Math.abs(num - task.expected) > 0.01){
+        ok = false;
+        reasons.push('計算結果が違います。'+(typeof calcVal==='number'?'（あなたの結果：'+roundNice(calcVal)+'）':''));
+      }
+    }
+  }
+
+  // 判定確定
+  state.answered = true;
+  document.getElementById('formula-input').disabled = true;
+  document.getElementById('check-btn').disabled = true;
+
+  // ターゲットセルに結果を表示
+  if(ok && typeof calcVal==='number'){
+    const cells = document.querySelectorAll('#t-sheet td.target');
+    cells.forEach(c=>{ c.textContent = roundNice(calcVal); c.classList.remove('target'); c.classList.add('filled'); });
+  }
+
+  const fb = document.getElementById('t-feedback');
+  if(ok){
+    state.correct++;
+    fb.className = 'feedback show ok';
+    fb.innerHTML = '<div class="label">⭕ 正解！</div>'+task.exp;
+  } else {
+    fb.className = 'feedback show ng';
+    fb.innerHTML = '<div class="label">❌ もう一度考えてみよう</div>'+reasons.join('<br>')+
+      '<br><br><b>解説：</b>'+task.exp;
+  }
+
+  const nb = document.getElementById('next-btn');
+  nb.textContent = (state.idx >= TASKS.length-1) ? '結果を見る →' : '次の問題へ →';
+  nb.classList.remove('hidden');
+  document.getElementById('prog-correct').textContent = state.correct;
+}
+
+function showAnswer(){
+  const task = TASKS[state.idx];
+  const inp = document.getElementById('formula-input');
+  // 模範の式をプレースホルダ的に薄く提示（入れはしない）
+  let sample = '=';
+  if(task.mustUse==='SUM') sample='=SUM(C2:C11)';
+  else if(task.mustUse==='AVERAGE') sample='=AVERAGE(C2:C11)';
+  else if(task.mustUse==='MAX') sample='=MAX(C2:C11)';
+  else if(task.mustUse==='MIN') sample='=MIN(C2:C11)';
+  else if(task.mustUse==='COUNT') sample='=COUNT(C2:C11)';
+  else if(task.mustUse==='COUNTIF') sample='=COUNTIF(C2:C11,">=80")';
+  else if(task.useAbsolute) sample='=C2/$E$1';
+  else sample='=C2+C3';
+  inp.value = '';
+  inp.placeholder = 'ヒント例： '+sample;
+  inp.focus();
+}
+
+function roundNice(n){
+  return Math.round(n*100)/100;
+}
+
+function nextTask(){
+  state.idx++;
+  if(state.idx >= TASKS.length){ endDrill(); return; }
+  renderTask();
+}
+
+function endDrill(){
+  document.getElementById('drill-screen').style.display='none';
+  document.getElementById('result-screen').style.display='block';
+  document.getElementById('final-score').textContent = state.correct;
+  document.getElementById('final-total').textContent = TASKS.length;
+  const rate = state.correct/TASKS.length;
+  let c;
+  if(rate>=0.9) c='完璧です！実際に数式を打てる力がついています。';
+  else if(rate>=0.6) c='よくできました。間違えた問題をもう一度やってみましょう。';
+  else c='まずは=から始めること、関数名と範囲指定に慣れましょう。何度でも挑戦を！';
+  document.getElementById('result-comment').textContent = c;
+}
+
+// Enterキーで答え合わせ
+document.addEventListener('keydown', e=>{
+  if(e.key==='Enter' && document.getElementById('drill-screen').style.display!=='none'){
+    if(!state.answered) checkAnswer();
+    else nextTask();
+  }
+});
+</script>
+</body>
+</html>
