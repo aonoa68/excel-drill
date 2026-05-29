@@ -71,6 +71,22 @@
     font-size:.85rem;margin-bottom:16px;color:#6b5d00;}
   .nav-links{text-align:center;margin-top:10px;font-size:.85rem;}
   .nav-links a{color:var(--green-dark);}
+
+  /* 関数リファレンス */
+  .func-ref{margin-top:18px;border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  .func-ref summary{padding:12px 16px;background:var(--head);cursor:pointer;font-weight:bold;
+    font-size:.9rem;color:var(--green-dark);list-style:none;user-select:none;}
+  .func-ref summary::-webkit-details-marker{display:none;}
+  .func-ref summary::before{content:"▶ ";font-size:.75rem;}
+  .func-ref[open] summary::before{content:"▼ ";}
+  .func-ref[open] summary{border-bottom:1px solid var(--border);}
+  .func-ref-body{padding:8px 16px 16px;}
+  .func-item{padding:12px 0;border-bottom:1px dashed var(--border);}
+  .func-item:last-child{border-bottom:none;}
+  .func-name{font-family:"SF Mono",Consolas,monospace;font-weight:bold;color:var(--green-dark);font-size:.95rem;}
+  .func-desc{font-size:.86rem;color:var(--text);margin:3px 0;}
+  .func-ex{font-family:"SF Mono",Consolas,monospace;font-size:.82rem;background:#f0f0f0;
+    padding:3px 8px;border-radius:4px;display:inline-block;margin-top:3px;color:#444;}
 </style>
 </head>
 <body>
@@ -118,6 +134,12 @@
 
       <div class="feedback" id="t-feedback"></div>
       <button class="btn full hidden" id="next-btn" onclick="nextTask()">次の問題へ →</button>
+
+      <!-- 関数リファレンス（折りたたみ） -->
+      <details class="func-ref">
+        <summary>📖 関数の一覧と使い方を見る</summary>
+        <div class="func-ref-body" id="func-ref-body"></div>
+      </details>
     </div>
 
     <!-- 結果 -->
@@ -157,6 +179,37 @@ const DATA = [
   [9,'学生I',70],
   [10,'学生J',82],
 ];
+
+/* =========================================================
+   関数リファレンス（ヒントとして開ける）
+   ========================================================= */
+const FUNC_REF = [
+  { name:'SUM（合計）', desc:'指定した範囲の数値を全部足す。', ex:'=SUM(C2:C11)' },
+  { name:'AVERAGE（平均）', desc:'指定した範囲の平均を出す（合計÷個数）。', ex:'=AVERAGE(C2:C11)' },
+  { name:'MAX（最大値）', desc:'範囲の中で一番大きい数値を返す。', ex:'=MAX(C2:C11)' },
+  { name:'MIN（最小値）', desc:'範囲の中で一番小さい数値を返す。', ex:'=MIN(C2:C11)' },
+  { name:'COUNT（個数）', desc:'範囲の中で「数値が入っているセル」の個数を数える。', ex:'=COUNT(C2:C11)' },
+  { name:'COUNTA（個数・文字含む）', desc:'空でないセルの個数を数える（文字もカウント）。', ex:'=COUNTA(B2:B11)' },
+  { name:'COUNTIF（条件付き個数）', desc:'条件に合うセルだけ数える。条件は "&gt;=80" のように書く。', ex:'=COUNTIF(C2:C11,"&gt;=80")' },
+  { name:'IF（もし〜なら）', desc:'条件によって表示を変える。=IF(条件, 真のとき, 偽のとき)。', ex:'=IF(C2&gt;=60,"合格","不合格")' },
+  { name:'四則演算', desc:'セル参照を使って計算。+ - * / が使える。', ex:'=C2+C3 ／ =C2*1.1' },
+  { name:'絶対参照（$）', desc:'$ をつけたセルは、コピーしても固定される。', ex:'=C2/$E$1' },
+];
+
+function renderFuncRef(){
+  const body = document.getElementById('func-ref-body');
+  if(!body || body.dataset.done) return;
+  body.innerHTML = '<p style="font-size:.82rem;color:var(--muted);margin-bottom:8px;">'+
+    '困ったらここを参考に。ただし「いつ使うか」を考えるのが大事です。</p>' +
+    FUNC_REF.map(f =>
+      '<div class="func-item">'+
+      '<div class="func-name">'+f.name+'</div>'+
+      '<div class="func-desc">'+f.desc+'</div>'+
+      '<span class="func-ex">'+f.ex+'</span>'+
+      '</div>'
+    ).join('');
+  body.dataset.done = '1';
+}
 
 /* =========================================================
    課題定義
@@ -244,6 +297,7 @@ function startDrill(){
   document.getElementById('drill-screen').style.display='block';
   document.getElementById('prog-total').textContent = TASKS.length;
   document.getElementById('total-task').textContent = TASKS.length;
+  renderFuncRef();
   renderTask();
 }
 
