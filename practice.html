@@ -469,8 +469,11 @@ function checkAnswer(){
     ok = false; reasons.push('数式は <code>=</code> から始めます。');
   }
   // 2) 指定関数を使っているか
-  if(task.mustUse && !upper.includes(task.mustUse)){
-    ok = false; reasons.push('この問題では <code>'+task.mustUse+'</code> 関数を使ってください。');
+  //   関数名の直後に「(」が来ることを条件にする。これで COUNT と COUNTA、
+  //   SUM と SUMIF、COUNT と COUNTIF を取り違えずに判定できる（空白は無視）。
+  const upperNoSpace = upper.replace(/\s+/g,'');
+  if(task.mustUse && !upperNoSpace.includes(task.mustUse + '(')){
+    ok = false; reasons.push('この問題では <code>'+task.mustUse+'</code> 関数を使ってください。（似た名前の別関数では正解になりません）');
   }
   // 3) 絶対参照が必要な問題で $ があるか
   if(task.useAbsolute && !formula.includes('$')){
