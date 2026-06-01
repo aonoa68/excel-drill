@@ -122,7 +122,7 @@
         判定は「<b>指定された関数を使い、かつ計算結果が正しいか</b>」。
         手で答えの数字を打っても正解になりません（数式を使いましょう）。
       </div>
-      <p style="margin-bottom:16px;">全 <b id="total-task">8</b> 問。実際に手を動かす練習です。</p>
+      <p style="margin-bottom:16px;">全 <b id="total-task">9</b> 問。実際に手を動かす練習です。</p>
       <button class="btn full" onclick="startDrill()">スタート</button>
       <div class="nav-links" style="margin-top:14px;">
         <a href="index.html">→ 概念ドリル（選択式）はこちら</a>
@@ -167,7 +167,7 @@
     <div id="result-screen" style="display:none;">
       <div class="result">
         <h2>おつかれさまでした！</h2>
-        <div class="score"><span id="final-score">0</span> / <span id="final-total">8</span></div>
+        <div class="score"><span id="final-score">0</span> / <span id="final-total">9</span></div>
         <p id="result-comment" style="margin:16px 0;"></p>
         <button class="btn full" onclick="location.reload()">もう一度挑戦する</button>
         <div class="nav-links" style="margin-top:14px;">
@@ -289,6 +289,13 @@ const TASKS = [
     targetCell:'C13', expected:5,
     prompt:'ExcelでC2からC11までのうち、80以上の数値がいくつあるかを数える数式を教えてください。',
     exp:'=COUNTIF(C2:C11,">=80") で5人（85,90,88,95,82）。COUNTIFは「条件に合うものだけ数える」関数です。' },
+
+  { tag:'標準偏差（母か標本か）', mustUse:['STDEV.S','STDEV'],
+    instruction:'全校生徒の点数の「ばらつき」を知りたいのですが、全員を調べるのは大変です。そこで<b>10人を抜き出して（標本）</b>、そこから<b>全校のばらつきを推測</b>することにしました。<br>この標本から標準偏差を求めなさい。Windows版 Excel には <code>STDEV.S</code> と <code>STDEV.P</code> の2つがあります。<b>どちらを使うべきか</b>考えて選びましょう。',
+    hint:'<b>STDEV.S</b>（S=sample＝標本）…一部の標本から、その先の大きな集団（全校）を推測したいとき。<br><b>STDEV.P</b>（P=population＝母集団）…調べた人たち「そのもの」の散らばりだけを知りたいとき。<br>今回は「10人の標本から全校を推測」したい。さて、どっち？　書き方は <code>=STDEV.S(範囲)</code>。',
+    targetCell:'C13', expected:12.79,
+    prompt:'Excelで、全校生徒のばらつきを知りたいけれど全員は無理なので、10人を抽出した標本から全校の標準偏差を推測したいです。標本の標準偏差(STDEV.S)と母集団の標準偏差(STDEV.P)の違い、そしてこの場合どちらを使うべきか教えてください。',
+    exp:'=STDEV.S(C2:C11) で約 <b>12.79</b>。<br>「10人の標本から全校を推測」したいので <b>STDEV.S</b>（S=標本）。もし「この10人そのものの散らばりだけ知りたい」なら <b>STDEV.P</b>（P=母集団、約12.13）。<br>⚠️ <b>大事な注意</b>：P か S かは“データの性質”で自動的に決まるのではなく、<b>「何を知りたいか」で決まります</b>。第7回の20か国の投資額も「推定値＝標本的」として扱い、授業では <b>STDEV.S（標本）</b>を使いました。<br>※旧名の <code>STDEV</code>（.Sなし）でも同じ＝正解。' },
 
   { tag:'四則演算', mustUse:null,
     instruction:'学生Aの点数（78）と学生Bの点数（85）を「足し算」しなさい。',
@@ -470,10 +477,12 @@ function checkAnswer(){
   }
   // 2) 指定関数を使っているか
   //   関数名の直後に「(」が来ることを条件にする。これで COUNT と COUNTA、
-  //   SUM と SUMIF、COUNT と COUNTIF を取り違えずに判定できる（空白は無視）。
+  //   SUM と SUMIF、STDEV.P と STDEV.S を取り違えずに判定できる（空白は無視）。
+  //   mustUse は配列も可（例：['STDEV.P','STDEVP'] のように別名を許容）。
   const upperNoSpace = upper.replace(/\s+/g,'');
-  if(task.mustUse && !upperNoSpace.includes(task.mustUse + '(')){
-    ok = false; reasons.push('この問題では <code>'+task.mustUse+'</code> 関数を使ってください。（似た名前の別関数では正解になりません）');
+  const required = Array.isArray(task.mustUse) ? task.mustUse : (task.mustUse ? [task.mustUse] : []);
+  if(required.length && !required.some(fn => upperNoSpace.includes(fn.toUpperCase() + '('))){
+    ok = false; reasons.push('この問題では <code>'+required[0]+'</code> 関数を使ってください。（似た名前の別関数では正解になりません）');
   }
   // 3) 絶対参照が必要な問題で $ があるか
   if(task.useAbsolute && !formula.includes('$')){
