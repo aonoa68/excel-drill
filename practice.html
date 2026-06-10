@@ -290,6 +290,13 @@ const TASKS = [
     prompt:'ExcelでC2からC11までのうち、80以上の数値がいくつあるかを数える数式を教えてください。',
     exp:'=COUNTIF(C2:C11,">=80") で5人（85,90,88,95,82）。COUNTIFは「条件に合うものだけ数える」関数です。' },
 
+  { tag:'合格者の平均', mustUse:'AVERAGEIF',
+    instruction:'80点以上の「合格者だけ」の平均点を求めなさい。',
+    hint:'条件に合うものだけ平均するには <code>=AVERAGEIF(範囲, 条件)</code>。条件は <code>">=80"</code> のように書きます。',
+    targetCell:'C13', expected:88,
+    prompt:'ExcelでC2からC11までのうち、80以上の点数だけの平均を求める数式を教えてください。',
+    exp:'=AVERAGEIF(C2:C11,">=80") で88点（85,90,88,95,82の平均）。<br>COUNTIFが「条件に合う"数"」を数えるのに対し、<b>AVERAGEIFは「条件に合うものだけの"平均"」</b>を出します。<br>👉 第9回ではこれを使って「<b>朝食ありの人だけの睡眠時間の平均</b>」のように、グループ別の比較ができます。' },
+
   { tag:'標準偏差（母か標本か）', mustUse:['STDEV.S','STDEV'],
     instruction:'全校生徒の点数の「ばらつき」を知りたいのですが、全員を調べるのは大変です。そこで<b>10人を抜き出して（標本）</b>、そこから<b>全校のばらつきを推測</b>することにしました。<br>この標本から標準偏差を求めなさい。Windows版 Excel には <code>STDEV.S</code> と <code>STDEV.P</code> の2つがあります。<b>どちらを使うべきか</b>考えて選びましょう。',
     hint:'<b>STDEV.S</b>（S=sample＝標本）…一部の標本から、その先の大きな集団（全校）を推測したいとき。<br><b>STDEV.P</b>（P=population＝母集団）…調べた人たち「そのもの」の散らばりだけを知りたいとき。<br>今回は「10人の標本から全校を推測」したい。さて、どっち？　書き方は <code>=STDEV.S(範囲)</code>。',
@@ -547,6 +554,7 @@ function showAnswer(){
   else if(task.mustUse==='MIN') sample='=MIN(C2:C11)';
   else if(task.mustUse==='COUNT') sample='=COUNT(C2:C11)';
   else if(task.mustUse==='COUNTIF') sample='=COUNTIF(C2:C11,">=80")';
+  else if(task.mustUse==='AVERAGEIF') sample='=AVERAGEIF(C2:C11,">=80")';
   else if(task.useAbsolute) sample='=C2/$E$1';
   else sample='=C2+C3';
   inp.value = '';
